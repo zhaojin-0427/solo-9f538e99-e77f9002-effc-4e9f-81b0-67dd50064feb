@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>六键盲文录入练习</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #6b7280;
+      --line: #d6dbe1;
+      --accent: #1d4ed8;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 24px; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h2 { font-size: 16px; margin: 0 0 12px; }
+    .keymap { display: flex; gap: 10px; flex-wrap: wrap; }
+    .key {
+      display: flex; flex-direction: column; align-items: center;
+      min-width: 64px; padding: 8px 10px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: #fafbfc;
+    }
+    .key b {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: grid; place-items: center;
+      background: var(--accent); color: #fff; font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .key span { font-size: 13px; color: var(--muted); }
+    textarea {
+      width: 100%; min-height: 200px; resize: vertical;
+      font-size: 28px; line-height: 1.8; padding: 14px;
+      border: 1px solid var(--line); border-radius: 10px;
+      font-family: "DejaVu Sans", "Noto Sans Symbols", "Segoe UI Symbol", sans-serif;
+    }
+    textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    #status {
+      margin-top: 10px; font-size: 13px; color: var(--muted);
+      min-height: 1.4em;
+    }
+    .rules { font-size: 14px; color: #374151; margin: 0; padding-left: 20px; }
+    .rules li { margin-bottom: 6px; }
+    .chart { font-size: 22px; letter-spacing: 2px; }
+    .chart small { font-size: 13px; color: var(--muted); letter-spacing: 0; }
+    code { background: #eef1f5; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>六键盲文录入练习</h1>
+    <p class="sub">在下方编辑框中练习，点字与空格按各组首键 / 空格键的按下顺序写入。</p>
+
+    <div class="card">
+      <h2>键位（依次对应盲文第 1～6 点）</h2>
+      <div class="keymap">
+        <div class="key"><b>F</b><span>第 1 点</span></div>
+        <div class="key"><b>D</b><span>第 2 点</span></div>
+        <div class="key"><b>S</b><span>第 3 点</span></div>
+        <div class="key"><b>J</b><span>第 4 点</span></div>
+        <div class="key"><b>K</b><span>第 5 点</span></div>
+        <div class="key"><b>L</b><span>第 6 点</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>练习区</h2>
+      <textarea id="editor" autofocus
+        placeholder="点击此处后，用 F D S / J K L 组合输入盲文，空格输入词间空格"></textarea>
+      <div id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>录入规则</h2>
+      <ul class="rules">
+        <li>同时按下的一组点键组成一个盲文字符（Unicode U+2800 区段，如 F+D = ⠃）。</li>
+        <li>长按触发的自动重复按键被忽略，不会重复收键。</li>
+        <li>一组点键在<b>首次松开其中一键</b>后即停止收键；其余键未松开也可直接按起下一组，允许两组交叠。</li>
+        <li>组内按键<b>全部松开</b>后才落字；多组按各自<b>首键按下的先后</b>排序，空格键同样按按下时刻排队。</li>
+        <li>编辑框有选区时，第一条写入的字符<b>替换选中内容</b>，其后字符在光标处继续插入。</li>
+        <li>移动光标、修改选区、离开编辑框或切出窗口，都会<b>丢弃尚未写入的内容</b>，随后残留的松开动作不会补写。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>盲文字符对照（部分）</h2>
+      <p class="chart" id="chart"></p>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='braille-core.js') }}"></script>
+  <script>
+    // 用与录入逻辑同一份点号映射生成对照表，避免手抄出错
+    (function () {
+      var dotKeys = { 1: 'F', 2: 'D', 3: 'S', 4: 'J', 5: 'K', 6: 'L' };
+      var examples = [[1], [1, 2], [1, 4], [1, 2, 4], [1, 5], [1, 2, 4, 5], [1, 3, 4], [1, 2, 3, 4, 5, 6]];
+      document.getElementById('chart').innerHTML = examples.map(function (dots) {
+        var ch = BrailleCore.dotsToChar(dots);
+        var keys = dots.map(function (d) { return dotKeys[d]; }).join('+');
+        return ch + ' <small>' + keys + '（点 ' + dots.join('、') + '）</small>';
+      }).join('&nbsp;&nbsp;');
+    })();
+  </script>
+  <script src="{{ url_for('static', filename='braille-ui.js') }}"></script>
+  <script>
+    window.initBrailleInput({
+      textarea: document.getElementById('editor'),
+      statusEl: document.getElementById('status')
+    });
+  </script>
+</body>
+</html>

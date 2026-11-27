@@ -1,0 +1,10 @@
+services:
+  braille-practice:
+    build: .
+    container_name: braille-practice
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
