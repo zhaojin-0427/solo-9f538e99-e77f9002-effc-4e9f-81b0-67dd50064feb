@@ -47,6 +47,22 @@
       margin-bottom: 6px;
     }
     .key span { font-size: 13px; color: var(--muted); }
+    .history-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .hist-btn {
+      font: inherit; font-size: 14px;
+      padding: 7px 16px; border-radius: 8px;
+      border: 1px solid var(--line); background: #fafbfc; color: var(--ink);
+      cursor: pointer; transition: background .15s, border-color .15s;
+    }
+    .hist-btn:hover:not(:disabled) { background: #eef4ff; border-color: var(--accent); }
+    .hist-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .hist-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .hist-undo::before { content: "↶ "; }
+    .hist-redo::before { content: "↷ "; }
+    .history-hint { font-size: 12.5px; color: var(--muted); }
     textarea {
       width: 100%; min-height: 200px; resize: vertical;
       font-size: 28px; line-height: 1.8; padding: 14px;
@@ -84,6 +100,17 @@
 
     <div class="card">
       <h2>练习区</h2>
+      <div class="history-bar" role="group" aria-label="撤销与重做">
+        <button type="button" id="undo" data-action="undo" data-testid="undo"
+                class="hist-btn hist-undo"
+                title="撤销（Ctrl/⌘ + Z）"
+                aria-keyshortcuts="Control+Z Meta+Z" disabled>撤销</button>
+        <button type="button" id="redo" data-action="redo" data-testid="redo"
+                class="hist-btn hist-redo"
+                title="重做（Ctrl/⌘ + Shift + Z）"
+                aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z" disabled>重做</button>
+        <span class="history-hint">快捷键：Ctrl/⌘+Z 撤销，Ctrl/⌘+Shift+Z 重做</span>
+      </div>
       <textarea id="editor" autofocus
         placeholder="点击此处后，用 F D S / J K L 组合输入盲文，空格输入词间空格"></textarea>
       <div id="status"></div>
@@ -97,6 +124,8 @@
         <li>一组点键在<b>首次松开其中一键</b>后即停止收键；其余键未松开也可直接按起下一组，允许两组交叠。</li>
         <li>组内按键<b>全部松开</b>后才落字；多组按各自<b>首键按下的先后</b>排序，空格键同样按按下时刻排队。</li>
         <li>编辑框有选区时，第一条写入的字符<b>替换选中内容</b>，其后字符在光标处继续插入。</li>
+        <li><b>撤销 / 重做</b>：点字与空格逐个记录；剪切、粘贴、换行、删除按每次操作记录，正文有变化才入历史。撤销恢复这一步之前的正文与光标/选区，重做恢复之后的状态。</li>
+        <li>撤销后移动光标或修改选区<b>仍可重做</b>，只有产生新的正文改动才会清除重做记录；发起撤销/重做时会丢弃尚未写入的点键与空格。</li>
         <li>移动光标、修改选区、离开编辑框或切出窗口，都会<b>丢弃尚未写入的内容</b>，随后残留的松开动作不会补写。</li>
       </ul>
     </div>
